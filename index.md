@@ -3,7 +3,11 @@ layout: lesson
 root: .  # Is the only page that doesn't follow the pattern /:path/index.html
 permalink: index.html  # Is the only page that doesn't follow the pattern /:path/index.html
 ---
-FIXME: home page introduction
+
+This "lesson" is a collection of independent capsules, each addressing a single topic of C++ programming.
+Each is a summary of a talk, typically from a major C++ conference, given by an acknowledged C++ expert.
+Each lesson contains a link to the talk it summarizes; readers are strongly encouraged to watch the talk
+if the summary seems to be interesting.
 
 <!-- this is an html comment -->
 
@@ -11,7 +15,7 @@ FIXME: home page introduction
 
 > ## Prerequisites
 >
-> FIXME
+> At least beginner-level knowledge of C++.
 {: .prereq}
 
 {% include curriculum.html %}
