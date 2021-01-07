@@ -25,25 +25,32 @@ The link to the talk is [https://youtu.be/LDxAgMe6D18](https://youtu.be/LDxAgMe6
 
 ## What is legacy code?
 
-Kate and James define *legacy code* as code that doesn't follow current "best practices".
+Kate and James define *legacy code* as code that doesn't follow current *best practices*.
 This means that sometimes code is *legacy* the moment we write it!
 Legacy code is not necessarily old (but often is).
+Because the community's understanding of best practices changes with time
+(as the language changes, and as we learn how to best use the language),
+code that is following best practices today might no longer be,
+some time in the future.
 What you are writing today is likely some day to be legacy code.
+This is one of the reasons that code maintenance is necessary.
 
 *Should* we update legacy code?
 What about the maxim "If it ain't broke, don't fix it"?
-In important ways, legacy code *is* in a sense "broken".
-It may well be functional, but it has other problems.
-Legacy code is harder than necessary to understand,
-making it more difficult to add functionality, improve speed, etc.
-
+Legacy code *is* in a sense "broken".
+It may be functional, but it has other problems.
+Legacy code is harder than necessary to understand.
+This makes it more difficult to add functionality,
+to improve speed,
+and to fix errors.
 Updating code has a cost.
 Failure to update code also has a continued cost.
 
 Updating legacy code can result in unexpected speed and memory use improvements.
-I have found this to be a common effect.
+James discussed this with an example in his own experience.
+I have found this to be a common effect in upgrading HEP code.
 
-Most of the talk was spent going through a series of incrementally more expensive steps that can be taken to update legacy code.
+Most of Kate and James's talk was spent going through a series of incrementally more expensive steps that can be taken to update legacy code.
 
 ## Turn up the warning level
 
@@ -60,42 +67,92 @@ And much better than having incorrect code produce results that have errors that
 
 Treat warnings as errors.
 This makes it impossible to ignore them.
-
-Questions for you to consider:
+Treating warnings as errors sometimes requires extra effort to "work around"
+cases in which a warning is actually spurious in the specific context in which
+it arises.
+Failure to treat warnings as errors often (maybe always, on a large project)
+leads to many warnings being part of a normal build.
+This in turn makes it easy to miss
+the the truly dangerous situations that result in the generation of warnings.
 
 ### Questions
-* Does your experiment already do this?
-* Can you convince them to do so, if they do not?
-* Can you do it locally, in your own build, even if your experiment does not?
+* What warning level does your experiment typically use?
+* Does your experiment use warnings as errors?
+* Can you do it locally, for your own development, even if your experiment does not?
 
 ## Avoid conditional compilation
 
-* Conditional compilation uses `#if defined` or similar preprocessor macros to include code.
-* What should be used instead?
-	* prefer function overload sets
-	* prefer templates
-* Kate and James suggest: *`#ifdef` entire functions*. I disagree.
-* My favorite comment on this technique (I do not recall the author): "Congratulations, you have written platform
-  multi-dependent code."
-* I prefer to leverage the build system:
-	* Write functions (or classes, or templates) with the same name, and the same interface.
-	* Have the build system choose (maybe with user guidance) which *one* gets compiled and linked
-    (or just included, if all is in a header).
+Conditional compilation uses the `#if` or similar preprocessor macros to 
+select what code should be compiled.
+It is used to support such things as conditional debugging,
+portablility for multiple operating systems,
+and handling the differences between compilers.
+
+Substantial use of conditional compilation makes code hard to understand,
+and thus hard to maintain.
+The speakers give an extended example of how, over time, the use of conditional
+compilation lead to a body of code that was impenetrable.
+Each path through the preprocessor logic is effectively a different
+implementation of the function or class in question;
+each should have its own testing.
+Identifying all combinations that can be formed can be very difficult.
+
+What should be used instead? The speakers suggest the use of
+*function overload sets* or *templates*, as appropriate.
+
+Kate and James suggest that is manageable to `#ifdef` entire functions. I
+disagree; I prefer to actually write different function or class
+implementations into different files, and to use the project's build system to
+select which files should be compiled or included.
+Among other benefits, this makes it easy to identify what the customization
+points are, and what specific functions or classes might need special attention
+when porting to a new compiler or new operating system.
+
+My favorite comment on the technique of conditional compilation to achieve
+platform independence is from Steve Dewhurst, in his book **C++ Gotchas**:
+  
+> This code is not platform-independent. It's multiplatform dependent. Any
+> change to any of the platforms requires not only a recompilation of the source
+> but change to the source for all platforms. You've achieved maximal coupling
+> among platforms: a remarkable achievement, if somewhat impractical.
+>
+
+### Questions
+* Does your experiment support multiple operating systems or compilers?
+* Do you know how to use your experiment's build system to conditionally compile
+  different files for different operating systems or compilers?
 
 ## Avoid macros
 
-* Why?
-	* macros do not obey namespace rules
-	* the preprocessor does not know about types
-	* compiler error messages come from the generated code, not what the user sees
-* What should be used instead?
-	* prefer function overload sets
-	* prefer templates
-* Note that templates are not exactly a solution to the issue of poor error messages.	
-* Sometimes you need a macro
-  Commonly appear as part of a plugin-handling system.
+Function-like macros are used in C to avoid function call overhead for
+frequently-used functions.
+Object-like macros are used in C to provide symbolic compile-time constants.
 
-#### Q: What other good uses of macros have you encountered?
+In modern C++ their use is not encouraged.
+Why?
+	* Macros do not obey namespace rules.
+    * The preprocessor that interprets macros does not know about types.
+    * Compiler error messages come from the generated code, not from the code
+      that the user sees.
+
+What should be used instead? The speakers prefer *function overload sets*
+and *templates*. In C++, *inline functions* can be used to avoid function call
+overhead. *const* and *constexpr* objects are preferred to object-like macros.
+
+The speakers note that templates are not exactly a solution to the issue of
+poor error messages.
+Error messages from templates are (notoriously) sometimes very long and thus
+can be hard to understand.
+This should be much improved with the use of *constrained templates*,
+when such libraries become available.
+
+Sometimes you need a macro. Athough they should be avoided when a better option
+is available, macros are sometimes the best solution. For example, their
+token-pasting ability (using `#` and `##`) commonly appear as part of a
+plugin-handling system.
+
+### Question
+* What other good uses of macros does your experiment employ?
 
 ## RAII and scope reduction
 
