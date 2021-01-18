@@ -85,7 +85,7 @@ the the truly dangerous situations that result in the generation of warnings.
 Conditional compilation uses the `#if` or similar preprocessor macros to 
 select what code should be compiled.
 It is used to support such things as conditional debugging,
-portablility for multiple operating systems,
+portability for multiple operating systems,
 and handling the differences between compilers.
 
 Substantial use of conditional compilation makes code hard to understand,
@@ -109,9 +109,10 @@ points are, and what specific functions or classes might need special attention
 when porting to a new compiler or new operating system.
 
 My favorite comment on the technique of conditional compilation to achieve
-platform independence is from Steve Dewhurst, in his book **C++ Gotchas**:
+platform independence is from Steve Dewhurst, in his book **C++ Gotchas**.
+After showing an example of code that uses `
   
-> This code is not platform-independent. It's multiplatform dependent. Any
+> This code is not platform-independent. It's multi-platform dependent. Any
 > change to any of the platforms requires not only a recompilation of the source
 > but change to the source for all platforms. You've achieved maximal coupling
 > among platforms: a remarkable achievement, if somewhat impractical.
@@ -146,73 +147,124 @@ can be hard to understand.
 This should be much improved with the use of *constrained templates*,
 when such libraries become available.
 
-Sometimes you need a macro. Athough they should be avoided when a better option
+Sometimes you need a macro. Although they should be avoided when a better option
 is available, macros are sometimes the best solution. For example, their
 token-pasting ability (using `#` and `##`) commonly appear as part of a
 plugin-handling system.
+
+The main use of object-like macros in C++ is *inclusion guards*, which should
+be used in headers to prevent problems from multiple inclusions.
 
 ### Question
 * What other good uses of macros does your experiment employ?
 
 ## RAII and scope reduction
 
-* "Housekeeping" boilerplate obscures logic (closing files, releasing DB connections, freeing memory,
-   any other resource handling). Also, checking on "special" values of inputs.
-* First suggestion: use `if (...)` and early return.
-* But what about the structured programming rule of having a single point of exit for a function?
+Kate and James call the kind of code that does resource handling
+*housekeeping* code.
+Such code deals with closing files, releasing database connections,
+freeing memory, and the like.
+Such code obscures the logic of the more import part of the function in which it appears.
+They present a few techniques for minimizing such code.
+
+The most important technique for handling housekeeping to to have it done automatically,
+controlled by the lifetimes of function-level objects.
+This technique is called *Resource allocation is initialization", or RAII.
+
+Other housekeeping code includes dealing with "edge cases", or "special values" of inputs.
+Very often code handling such cases looks like:
+
+```c++
+// top of the body of some function...
+if (x == happy_value) {
+  // code to do real work
+} else {
+  // code to handle special case
+  return 0;
+}
+```
+
+The speakers suggest inverting this to handle the special case first, so that the
+main work of the function is not in an indented block, and harder to follow:
+
+```c++
+// top of the body of some function...
+if (x != happy_value) {
+  return 0;
+}
+
+// Normal case is now main flow of the function.
+```
+But what about the structured programming rule of having a single point of exit for a function?
 
 ### What was original idea behind single entry/single exit?
 
-* Very old paper by Edsger Dijkstra introducing ideas of structured programming
-* Promulgated in the era when subroutines were just being invented;
-  really was talking about regions of code is a program without subroutines.
-* Introduced the discipline necessary to make such code manageable.
-	* especially for things like making sure all resources were correctly released
-* In modern C++, *with ubiquitous use of RAII*, this is already handled.
-* This is a rule for another era; it does not hold for modern C++.
+A very old paper by Edsger Dijkstra introduced the ideas of structured programming,
+including the idea that each section of code should have a single entry point
+and a single exit point. These ideas were promulgated in an era when subroutines were just being invented;
+it was really talking about regions of code in a program without subroutines.
+These ideas introduced the discipline necessary to make such code manageable,
+especially for things like making sure all resources were correctly released.
+
+In modern C++, *with ubiquitous use of RAII*, this is already handled.
+This is a rule for another era; it does not hold for modern C++.
 
 ## Use exceptions
 
-* This doesn't seem to need belaboring in our community.
-* If anything, we need to remind people to limit the use of exceptions to code that can't handle a failure
-  locally.
-* If your function throws and exception and catches it *in the same function*, you may be doing it wrong...
+In this section of the talk, the speakers were largely addressing groups
+that are translating C (or C-style C++) code into modern C++.
+
+This doesn't seem to need belaboring in our community.
+If anything, we need to remind people to limit the use of exceptions to those cases when a failure can not be handled locally.
+If your function throws and exception and catches it *in the same function*, it is likely that the use of exceptions in not appropriate.
 
 ## const (almost) all the things
 
-* In session 2, Dan Saks told us that `const`qualifying the arguments of a function *definition*
-  (not declaration) was pointless.
-* Kate and James tell us that doing this is useful, because it helps show the intention of the
-  implementer of the function.
+Kate and James recommend widespread use of `const`;
+essentially, anything that *can* be marked `const` *should* be marked as `const`.
+This is not primarily a matter of program speed;
+compilers can often determine what variables are not modified,
+and are quite good at optimizations that take advantage of this knowledge.
+It is primarily to make code easier to understand,
+and less likely to be broken during maintenance.
 
-#### Q: With whom do you agree?
+In a different talk, Dan Saks told us that `const`-qualifying any pass-by-value arguments of a function *definition*
+(not declaration) was pointless.
+His reasoning was that (1) `const` qualification of the declaration was meaningless; the compiler removes top-level
+`const` qualifications, so that as a function argument type `int const` (or `const int`) is converted to `int`, and
+(2) `const` qualification of the *definition* makes no difference to the caller of the function.
 
-## What about `const`data members?
+Kate and James disagree with the second part of this analysis. They tell us that `const`-qualification of by-value arguments
+in the function definition is useful, because it helps show the intention to the
+implementer of the function, and makes it less likely to break the implementation during maintenance.
 
-* A `const`*object* can't be modified --- but that is just that *object*, not the type.
-* A type with `const` data members is *immutable* --- no object of that type can be modified.
-* But having a `const` data member suppresses compiler generation of assignment, and can make *move*
-  inefficient.
+#### Question
 
-#### Q: Have you used `const` data members successfully?
+* With whom do you agree?
+
+## What about `const` data members?
+
+A `const` *object* can not be modified --- but that immutability applies only to that *object*, not all objects of the type.
+A type with `const` data members is truly *immutable* --- no object of that type can be modified.
+But having even a single `const` data member suppresses compiler generation of assignment, and can make *move* inefficient.
+Immutable types are not common in C++, but they can be written and are sometimes useful,
+especially in the context of multi-threading;
+since immutable objects can not be modified, they are much safer to share between threads, and do not require locking for safety.
+
+#### Question
+
+* Have you used `const` data members successfully?
 
 ## Get rid of C-style casts
 
-* Just don't do that. It is evil.
+C-style casts are a very powerful, but blunt, tool.
+C++ provides more precise ways of expressing the desired intent:
 
-#### Q: What are good ways to identify C-style casts, to help in removing them?
+* `dynamic_cast` to cast *down* or *across* an inheritance hierarchy
+* `static_cast` to perform explicit type conversions
+* `const_cast` to remove `const` (or rarely `volatile`) qualification
+* `reinterpret_cast` to convert between types by reinterpreting the underlying bytes
 
-## Transform loops
-
-* Sean Parent's talk "C++ Seasoning" is all about this.
-* Nested loops in code is one of the most prevalent cause of complexity in code, making code hard
-  to understand.
-* "typical 700 line loop" --- loops that are this long are too difficult to understand, and nearly
-  impossible to test. Are you really sure you have tested *all* the branches in such a function?
-* Lambdas make a world of difference in the use of algorithms to replace loops.
-
-#### Q: When is a for loop better than use of `std::for_each`?
-
-#### Q: What breakthrough moments have you had with other algorithms?
-
+In addition to stating the writer's intent more clearly, these casts are more easy to find
+than are C-style casts.
 
