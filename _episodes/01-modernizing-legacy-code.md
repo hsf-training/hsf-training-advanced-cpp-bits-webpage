@@ -82,7 +82,7 @@ the the truly dangerous situations that result in the generation of warnings.
 
 ## Avoid conditional compilation
 
-Conditional compilation uses the `#if` or similar preprocessor macros to 
+Conditional compilation uses the `#if` or similar preprocessor macros to
 select what code should be compiled.
 It is used to support such things as conditional debugging,
 portability for multiple operating systems,
@@ -111,7 +111,7 @@ when porting to a new compiler or new operating system.
 My favorite comment on the technique of conditional compilation to achieve
 platform independence is from Steve Dewhurst, in his book **C++ Gotchas**.
 After showing an example of code that uses `
-  
+
 > This code is not platform-independent. It's multi-platform dependent. Any
 > change to any of the platforms requires not only a recompilation of the source
 > but change to the source for all platforms. You've achieved maximal coupling
@@ -267,4 +267,3 @@ C++ provides more precise ways of expressing the desired intent:
 
 In addition to stating the writer's intent more clearly, these casts are more easy to find
 than are C-style casts.
-
