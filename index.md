@@ -16,7 +16,7 @@ The talks are chosen from major C++ and Python conferences and are available onl
 Participants are encouraged to watch the talk before the discussion session, but all are welcome.
 
 The PVJC is not restricted to Fermilab employees or visitors; 
-anyone interested in particpating in the PVJC should contact the organizer(s) listed there.
+anyone interested in participating in the PVJC should contact the organizer(s) listed there.
 
 <!-- this is an html comment -->
 
