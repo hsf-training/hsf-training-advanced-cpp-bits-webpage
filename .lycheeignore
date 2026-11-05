@@ -1,0 +1,3 @@
+# Fermilab Indico serves a Cloudflare bot challenge ("Just a moment...", 403)
+# to link checkers, so the PVJC category link can't be checked automatically.
+^https://indico\.fnal\.gov/category/1164/?$
